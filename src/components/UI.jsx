@@ -2,24 +2,13 @@ import React from 'react';
 import { useStore } from '../store';
 
 export function UI() {
-  const visionState = useStore((state) => state.visionState);
+  const { visionState, setVisionState, triggerIntroAnimation } = useStore();
 
-  const getTitle = () => {
-    switch (visionState) {
-      case 'emmetropia': return '정시 (Normal Vision)';
-      case 'myopia': return '근시 (Myopia)';
-      case 'hyperopia': return '원시 (Hyperopia)';
-      case 'presbyopia': return '노안 (Presbyopia)';
-      default: return '알 수 없음';
-    }
-  };
-
-  const getDescription = () => {
-    switch (visionState) {
-      case 'emmetropia': return '망막에 초점이 정확하게 맺히는 정상적인 시력 상태입니다.';
-      default: return '';
-    }
-  };
+  const options = [
+    { id: 'emmetropia', label: '정시 (Normal)' },
+    { id: 'myopia', label: '근시 (Myopia)' },
+    { id: 'hyperopia', label: '원시 (Hyperopia)' },
+  ];
 
   return (
     <div style={{
@@ -27,34 +16,45 @@ export function UI() {
       top: '2rem',
       left: '2rem',
       zIndex: 10,
-      background: 'rgba(255, 255, 255, 0.85)',
-      backdropFilter: 'blur(10px)',
-      padding: '1.5rem',
+      background: 'rgba(255, 255, 255, 0.9)',
+      backdropFilter: 'blur(12px)',
+      padding: '0.75rem',
       borderRadius: '1rem',
-      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-      border: '1px solid rgba(255, 255, 255, 0.4)',
-      maxWidth: '300px',
-      color: '#1e293b',
+      boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+      border: '1px solid rgba(255, 255, 255, 0.6)',
       fontFamily: '"Pretendard", "Inter", sans-serif'
     }}>
-      <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem', fontWeight: 'bold', color: '#0f172a' }}>
-        👁️ 3D 안구 시뮬레이터
-      </h1>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-        <span style={{ 
-          background: '#3b82f6', 
-          color: 'white', 
-          padding: '0.25rem 0.75rem', 
-          borderRadius: '999px', 
-          fontSize: '0.875rem',
-          fontWeight: '600'
-        }}>
-          {getTitle()}
-        </span>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        {options.map((opt) => {
+          const isActive = visionState === opt.id;
+          return (
+            <button
+              key={opt.id}
+              onClick={() => {
+                if (opt.id === 'emmetropia') {
+                  triggerIntroAnimation();
+                } else {
+                  setVisionState(opt.id);
+                }
+              }}
+              style={{
+                padding: '0.6rem 1.2rem',
+                borderRadius: '999px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.95rem',
+                fontWeight: isActive ? '700' : '500',
+                backgroundColor: isActive ? '#3b82f6' : 'transparent',
+                color: isActive ? 'white' : '#64748b',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: isActive ? '0 4px 12px rgba(59, 130, 246, 0.4)' : 'none'
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
       </div>
-      <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.5', color: '#475569' }}>
-        {getDescription()}
-      </p>
     </div>
   );
 }
