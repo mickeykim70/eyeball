@@ -26,10 +26,11 @@ import mataGlbUrl from '../assets/Mata.glb?url';
  *                   - 원시 (Hyperopia) : 안축장 짧아짐 → scale.z 감소  (예: 1.0 → 0.85)
  *                   - 노안 (Presbyopia): 수정체 조절력 저하 (안축장 변화 없음, Sphere001/006 담당)
  *                   ※ scale.z 변경 시 Sphere003(망막), Sphere004(공막)도 함께 조정 필요
- * ✅ Saraf          : 모양체 추정 (Ciliary Body) - 테스트 완료
- *                   홍채 뒤쪽에 위치. 수정체 두께를 조절하는 근육 구조.
- *                   원시(Hyperopia) / 노안(Presbyopia) 설명 시 조절력(Accommodation) 묘사에 활용 가능.
- * ✅ Saraf2         : 모양체-2 (Ciliary Body-2) - 테스트 완료
+ * ✅ Saraf          : 모양소대 (Zonule of Zinn) - 확인 완료
+ *                   홍채 뒤쪽에 실처럼 생긴 메시. 수정체 외피를 당겨 두께를 조절.
+ *                   긴장(tension) 시 수정체 납작, 이완(relaxation) 시 수정체 볼록.
+ *                   ※ 기존 "모양체(Ciliary Body)" 추정은 오기. 실제 모양체 메시는 미확인.
+ * ✅ Saraf2         : 모양소대-2 (Zonule of Zinn-2) - 확인 완료
  *                   Saraf와 동일 위치에 겹쳐있는 같은 구조물의 두 번째 레이어.
  * ✅ BezierCurve    : 망막 혈관 (Retinal Blood Vessel) - 테스트 완료
  * ✅ BezierCurve009 : 망막 혈관 (Retinal Blood Vessel) - 테스트 완료
