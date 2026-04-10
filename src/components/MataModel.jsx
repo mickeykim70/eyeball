@@ -82,11 +82,13 @@ export function MataModel(props) {
     // 모든 수동 재질 덮어쓰기 및 초기값 백업
     scene.traverse((child) => {
       if (child.isMesh) {
-        // 원본 Z축 위치와 스케일을 기억 (최초 1회) - 안축장 변형 애니메이션에 필요
+        // 원본 스케일 기억 (최초 1회) - 안축장 변형 애니메이션에 필요
         if (originalZ.current[child.name] === undefined) {
           originalZ.current[child.name] = {
-            pos: child.position.z,
-            scale: child.scale.z
+            posZ: child.position.z,   // 광학축 위치 보상용 (position.z = 세계 X축 방향)
+            scaleX: child.scale.x,
+            scaleY: child.scale.y,    // 광학축(앞뒤) 확인된 축
+            scaleZ: child.scale.z,
           };
         }
 
@@ -154,33 +156,33 @@ export function MataModel(props) {
         // ── Saraf2: 모양체-2 (Ciliary Body-2) ────────────────────────────
         // ── BezierCurve / BezierCurve009: 망막 혈관 (Retinal Blood Vessel)
 
+
       }
     });
   }, [scene]);
 
-  // 매 프레임마다 안구(망막/공막)의 길이를 물리적으로 애니메이션 처리
-  useFrame(() => {
-    // 상태별 변형 타겟값
-    // 안구 모델이 Y축 회전(-90도)되어 있으므로: Local -Z 방향이 곧 World +X (뒤통수 방향)
-    // 안축이 길어질 때 앞쪽이 투명렌즈를 뚫고 나오지 못하도록 position.z를 음수로 보상 이동시킴.
-    let targetScaleZ = 1.0;
-    let targetOffsetZ = 0.0;
+  // 안축장 변형 대상: 공막 + 안구본체 + 망막 + 망막혈관 (근시 시 함께 늘어나는 구조물)
+  const AXIAL_MESHES_1 = new Set(['Sphere004', 'Sphere', 'Sphere003', 'BezierCurve', 'BezierCurve009']);
 
-    // 근시/원시 애니메이션 제거 - 추후 지시에 따라 재구현 예정
+  useFrame(() => {
+    // 근시일 때 5% 늘림, 나머지는 원래 크기 유지
+    const targetScaleZ = visionState === 'myopia' ? 1.05 : 1.0;
 
     scene.traverse((child) => {
-      // 렌즈와 각막은 굴절에만 관여하므로 형태를 고정하고 나머지 안구 껍질만 변형
-      if (child.isMesh && child.name !== 'Sphere001' && child.name !== 'Sphere006') {
-        const orig = originalZ.current[child.name];
-        if (orig) {
-          const targetPos = orig.pos + targetOffsetZ;
-          const targetScale = orig.scale * targetScaleZ;
+      if (!child.isMesh || !AXIAL_MESHES_1.has(child.name)) return; // 5개 타겟
 
-          // 자연스럽고 부드럽게 변형(Lerp)
-          child.scale.z = THREE.MathUtils.lerp(child.scale.z, targetScale, 0.05);
-          child.position.z = THREE.MathUtils.lerp(child.position.z, targetPos, 0.05);
-        }
-      }
+      const orig = originalZ.current[child.name];
+      if (!orig) return;
+
+      // scale.y: 광학축(앞뒤) 방향으로 늘림
+      child.scale.y = THREE.MathUtils.lerp(child.scale.y, orig.scaleY * targetScaleZ, 0.05);
+
+      // position.y: 중심 기준 팽창으로 각막쪽도 밀리는 문제 보상
+      // 늘어난 양의 절반만큼 +Y 방향으로 이동 (방향 테스트: +1)
+      // position.z: 광학축 방향 보정 (position.z = 세계 -X = 뒤통수 방향)
+      // 늘어난 양의 절반만큼 이동해 각막쪽 고정 (방향 테스트: +1)
+      const expand = orig.scaleY * (targetScaleZ - 1.0); // * 0.5 제거 — 보정량 두 배
+      child.position.z = THREE.MathUtils.lerp(child.position.z, orig.posZ - expand, 0.05);
     });
   });
 
