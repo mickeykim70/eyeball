@@ -166,13 +166,7 @@ export function MataModel(props) {
     let targetScaleZ = 1.0;
     let targetOffsetZ = 0.0;
 
-    if (visionState === 'myopia') {
-      targetScaleZ = 1.08;
-      targetOffsetZ = -0.05; // 뒤쪽으로 길어짐
-    } else if (visionState === 'hyperopia') {
-      targetScaleZ = 0.90;
-      targetOffsetZ = 0.05; // 원시: 앞으로 당겨지며 짧아짐
-    }
+    // 근시/원시 애니메이션 제거 - 추후 지시에 따라 재구현 예정
 
     scene.traverse((child) => {
       // 렌즈와 각막은 굴절에만 관여하므로 형태를 고정하고 나머지 안구 껍질만 변형
