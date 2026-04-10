@@ -1,64 +1,86 @@
-import React from 'react';
-import { Html } from '@react-three/drei';
-import { useStore } from '../store';
+import React, { useMemo } from 'react';
+import * as THREE from 'three';
 
 export function TVScreen() {
-  const visionState = useStore((s) => s.visionState);
-  
-  // 망막 상의 흐림(Blur) 정도
-  let blurPx = 0;
-  if (visionState === 'myopia') blurPx = 3;
-  if (visionState === 'hyperopia') blurPx = 4;
-  
+  // CanvasTexture: 컴포넌트 마운트 시 한 번만 생성
+  const texture = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 360;
+    canvas.height = 280;
+    const ctx = canvas.getContext('2d');
+
+    // --- 배경 ---
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, 360, 280);
+
+    // --- 테두리 ---
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 10;
+    ctx.strokeRect(5, 5, 350, 270);
+
+    // --- 상단 라벨 배경 ---
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(5, 5, 350, 32);
+
+    // --- 상단 라벨 텍스트 ---
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 15px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('망막 촬상 화면 (POV)', 180, 21);
+
+    // --- 화살표 그리기 ---
+    // SVG viewBox "-1.2 -2.2 2.4 4.4" 기준의 경로를 canvas 좌표로 변환
+    // canvas 중심: (180, 155), 1유닛 = 50px, Y축 반전(수학 좌표계 → canvas)
+    const cx = 180;
+    const cy = 155;
+    const s = 50;
+    const tx = (x) => cx + x * s;       // X: 오른쪽 양수
+    const ty = (y) => cy - y * s;       // Y: 위쪽 양수 (canvas Y축 반전)
+
+    // 좌측(빨강) 파츠: 세로 막대 + 왼쪽 수평 날개
+    ctx.beginPath();
+    ctx.moveTo(tx(0),    ty(2));
+    ctx.lineTo(tx(0),    ty(-2));
+    ctx.lineTo(tx(-0.4), ty(-2));
+    ctx.lineTo(tx(-0.4), ty(0));
+    ctx.lineTo(tx(-1.0), ty(0));
+    ctx.closePath();
+    ctx.fillStyle = '#ef4444';
+    ctx.fill();
+
+    // 우측(파랑) 파츠: 세로 막대 + 오른쪽 화살촉
+    ctx.beginPath();
+    ctx.moveTo(tx(0),   ty(2));
+    ctx.lineTo(tx(1.0), ty(0));
+    ctx.lineTo(tx(0.4), ty(0));
+    ctx.lineTo(tx(0.4), ty(-2));
+    ctx.lineTo(tx(0),   ty(-2));
+    ctx.closePath();
+    ctx.fillStyle = '#3b82f6';
+    ctx.fill();
+
+    // --- 하단 FOCUS OK 텍스트 ---
+    ctx.fillStyle = '#22c55e';
+    ctx.font = 'bold italic 14px monospace';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('● FOCUS OK', 345, 268);
+
+    // CanvasTexture 생성 및 반환
+    const tex = new THREE.CanvasTexture(canvas);
+    return tex;
+  }, []); // 의존성 없음 — 항상 선명한 정적 텍스처
+
   return (
+    // 기존과 동일한 위치 유지
     <group position={[4.0, 3.2, 0]} rotation={[0, 0, 0]}>
-      {/* 3D 공간에 떠있는 HTML 패널 - 크기 대폭 축소 */}
-      <Html transform distanceFactor={5} position={[0, 0, 0]}>
-        <div style={{
-          width: '180px', height: '140px',
-          background: '#0f172a', border: '5px solid #334155', borderRadius: '10px',
-          boxShadow: '0 15px 30px rgba(0,0,0,0.8), 0 0 15px rgba(59, 130, 246, 0.2)',
-          position: 'relative', overflow: 'hidden',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
-        }}>
-          {/* 상단 라벨 */}
-          <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0,
-            background: '#1e293b', color: '#94a3b8', fontSize: '10px', letterSpacing: '1px',
-            padding: '4px 0', textAlign: 'center', fontWeight: '700'
-          }}>
-            📺 망막 촬상 화면 (POV)
-          </div>
-          
-          {/* 회원님의 오리지널 TargetArrow 형태를 정확히 본딴 SVG 모양 (Inverted) */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            filter: `blur(${blurPx}px)`, transition: 'filter 0.6s ease-in-out',
-            // 상하좌우 완전 역상 (180도 회전)
-            transform: 'rotate(180deg)', 
-            marginTop: '20px', opacity: blurPx > 2 ? 0.7 : 1
-          }}>
-            <svg viewBox="-1.2 -2.2 2.4 4.4" style={{ width: '40px', height: '80px', overflow: 'visible' }}>
-              <g transform="scale(1, -1)"> {/* Y축을 위쪽 기준의 데카르트 좌표계로 보정 */}
-                {/* 좌측(빨강) 화살표 파츠 */}
-                <path d="M 0 2 L 0 -2 L -0.4 -2 L -0.4 0 L -1.0 0 Z" fill="#ef4444" />
-                {/* 우측(파랑) 화살표 파츠 */}
-                <path d="M 0 2 L 1.0 0 L 0.4 0 L 0.4 -2 L 0 -2 Z" fill="#3b82f6" />
-              </g>
-            </svg>
-          </div>
-          
-          {/* 하단 포커스 상태 텍스트 */}
-          <div style={{
-            position: 'absolute', bottom: '8px', right: '12px',
-            color: blurPx === 0 ? '#22c55e' : '#eab308', 
-            fontSize: '11px', fontWeight: '900', fontStyle: 'italic',
-            textShadow: '0 2px 4px rgba(0,0,0,0.5)'
-          }}>
-            {blurPx === 0 ? '● FOCUS OK' : '○ OUT OF FOCUS'}
-          </div>
-        </div>
-      </Html>
+      <mesh>
+        {/* 180:140 비율 유지, 3D 크기는 장면에 맞게 조정 */}
+        <planeGeometry args={[1.8, 1.4]} />
+        {/* toneMapped=false: 색상이 조명/톤매핑에 영향받지 않고 원색 유지 */}
+        <meshBasicMaterial map={texture} toneMapped={false} />
+      </mesh>
     </group>
   );
 }
