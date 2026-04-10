@@ -82,13 +82,18 @@ export function MataModel(props) {
     // 모든 수동 재질 덮어쓰기 및 초기값 백업
     scene.traverse((child) => {
       if (child.isMesh) {
-        // 원본 스케일 기억 (최초 1회) - 안축장 변형 애니메이션에 필요
+        // 원본 스케일 + geometry 크기 기억 (최초 1회) - 안축장 변형 애니메이션에 필요
         if (originalZ.current[child.name] === undefined) {
+          // bounding box 계산 (geometry 실제 크기 확인용)
+          child.geometry.computeBoundingBox();
+          const bb = child.geometry.boundingBox;
           originalZ.current[child.name] = {
-            posZ: child.position.z,   // 광학축 위치 보상용 (position.z = 세계 X축 방향)
+            posZ: child.position.z,
             scaleX: child.scale.x,
             scaleY: child.scale.y,    // 광학축(앞뒤) 확인된 축
             scaleZ: child.scale.z,
+            bboxY: bb.max.y - bb.min.y, // geometry Y방향 크기 (주 축 메시용)
+            bboxZ: bb.max.z - bb.min.z, // geometry Z방향 크기 (Sphere003용)
           };
         }
 
@@ -161,12 +166,23 @@ export function MataModel(props) {
     });
   }, [scene]);
 
-  // 안축장 변형 대상: 공막 + 안구본체 + 망막 + 망막혈관 (근시 시 함께 늘어나는 구조물)
-  const AXIAL_MESHES_1 = new Set(['Sphere004', 'Sphere', 'Sphere003', 'BezierCurve', 'BezierCurve009']);
+  // 안축장 변형 대상: Sphere003(망막) 임시 제외 — 축 방향 확인 중
+  const AXIAL_MESHES_1 = new Set(['Sphere004', 'Sphere', 'BezierCurve', 'BezierCurve009']);
 
   useFrame(() => {
-    // 근시일 때 5% 늘림, 나머지는 원래 크기 유지
-    const targetScaleZ = visionState === 'myopia' ? 1.05 : 1.0;
+    // 디옵터별 안축장 배율 (임상 근사치: -1D ≈ +0.35mm, 정상 24mm 기준)
+    // -3D → +1.0mm → 4.2% 증가 → 1.042
+    // -6D → +2.0mm → 8.3% 증가 → 1.083
+    // -9D → +3.0mm → 12.5% 증가 → 1.125
+    const SCALE_MAP = {
+      myopia_3d:    1.042,  // 안축장 +1.0mm (+4.2%)
+      myopia_6d:    1.083,  // 안축장 +2.0mm (+8.3%)
+      myopia_9d:    1.125,  // 안축장 +3.0mm (+12.5%)
+      hyperopia_2d: 0.971,  // 안축장 -0.7mm (-2.9%)
+      hyperopia_4d: 0.942,  // 안축장 -1.4mm (-5.8%)
+      hyperopia_6d: 0.913,  // 안축장 -2.1mm (-8.7%)
+    };
+    const targetScaleZ = SCALE_MAP[visionState] ?? 1.0;
 
     scene.traverse((child) => {
       if (!child.isMesh || !AXIAL_MESHES_1.has(child.name)) return; // 5개 타겟
@@ -183,6 +199,20 @@ export function MataModel(props) {
       // 늘어난 양의 절반만큼 이동해 각막쪽 고정 (방향 테스트: +1)
       const expand = orig.scaleY * (targetScaleZ - 1.0); // * 0.5 제거 — 보정량 두 배
       child.position.z = THREE.MathUtils.lerp(child.position.z, orig.posZ - expand, 0.05);
+    });
+
+    // Sphere003(망막): 내부 축이 달라 scale.z로 별도 테스트
+    scene.traverse((child) => {
+      if (!child.isMesh || child.name !== 'Sphere003') return;
+
+      const orig = originalZ.current[child.name];
+      if (!orig) return;
+
+      // Sphere004(공막) 기준 세계 단위 변화량에 맞춰 Sphere003 scale.z 정규화
+      const ref = originalZ.current['Sphere004'];
+      const worldDelta = ref ? ref.bboxY * ref.scaleY * (targetScaleZ - 1.0) : 0; // 공막의 세계 단위 늘어나는 양
+      const normDelta = orig.bboxZ > 0 ? worldDelta / orig.bboxZ : 0;             // Sphere003 geometry 크기로 나눠 scale 단위로 변환
+      child.scale.z = THREE.MathUtils.lerp(child.scale.z, orig.scaleZ + normDelta, 0.05);
     });
   });
 

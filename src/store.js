@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export const useStore = create((set) => ({
-  // 현재 시력 상태 ('emmetropia' | 'myopia' | 'hyperopia' | 'presbyopia')
+  // 현재 시력 상태 ('emmetropia' | 'myopia_3d' | 'myopia_6d' | 'myopia_9d' | 'hyperopia_2d' | 'hyperopia_4d' | 'hyperopia_6d')
   visionState: 'emmetropia',
 
   // 정시 리셋(인트로 애니메이션 재실행) 트리거 토큰
