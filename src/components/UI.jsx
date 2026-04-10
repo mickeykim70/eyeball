@@ -58,7 +58,7 @@ export function UI() {
           onClick={() => setVisionState('hyperopia_2d')}
           style={btnStyle(isHyperopia)}
         >
-          원시
+          원시(+2D)
         </button>
 
         {/* 정시 — 클릭 시 인트로 애니메이션 재실행 */}
@@ -69,24 +69,24 @@ export function UI() {
           정시
         </button>
 
-        {/* 근시 — 클릭 시 경도(-3D)로 설정 */}
+        {/* 근시 — 클릭 시 경도(-2D)로 설정 */}
         <button
           onClick={() => setVisionState('myopia_3d')}
           style={btnStyle(isMyopia)}
         >
-          근시
+          근시(-2D)
         </button>
 
       </div>
 
-      {/* 2행: 원시 서브버튼 (약함 +2D, 중간 +4D) */}
+      {/* 2행: 원시 서브버튼 (중등도 +4D, 고도 +6D) */}
       {isHyperopia && (
         <div style={{ display: 'flex', gap: '0.4rem', paddingLeft: '0.2rem' }}>
-          <button onClick={() => setVisionState('hyperopia_2d')} style={subBtnStyle(visionState === 'hyperopia_2d')}>
-            약함 +2D
-          </button>
           <button onClick={() => setVisionState('hyperopia_4d')} style={subBtnStyle(visionState === 'hyperopia_4d')}>
-            중간 +4D
+            중등도(+4D)
+          </button>
+          <button onClick={() => setVisionState('hyperopia_6d')} style={subBtnStyle(visionState === 'hyperopia_6d')}>
+            고도(+6D)
           </button>
         </div>
       )}

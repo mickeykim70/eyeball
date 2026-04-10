@@ -201,6 +201,22 @@ export function MataModel(props) {
       child.position.z = THREE.MathUtils.lerp(child.position.z, orig.posZ - expand, 0.05);
     });
 
+    // ── 수정체 두께 애니메이션 (원시 시뮬레이션) ──────────────────────────
+    // 원시 상태 시 수정체(Sphere001 외피 + Sphere006 내부)의 scale.z를 확대
+    // scale.z = 수정체 두께 축 (확인 완료)
+    const LENS_SCALE_MAP = {
+      hyperopia_2d: 1.2,  // 경도 원시: 두께 +20%
+      hyperopia_4d: 1.35, // 중등도 원시: 두께 +35%
+      hyperopia_6d: 1.5,  // 고도 원시: 두께 +50%
+    };
+    const targetLensScaleZ = LENS_SCALE_MAP[visionState] ?? 1.0; // 비원시 시 원본 복귀
+    scene.traverse((child) => {
+      if (!child.isMesh || (child.name !== 'Sphere001' && child.name !== 'Sphere006')) return;
+      const orig = originalZ.current[child.name];
+      if (!orig) return;
+      child.scale.z = THREE.MathUtils.lerp(child.scale.z, orig.scaleZ * targetLensScaleZ, 0.05);
+    });
+
     // Sphere003(망막): 내부 축이 달라 scale.z로 별도 테스트
     scene.traverse((child) => {
       if (!child.isMesh || child.name !== 'Sphere003') return;
